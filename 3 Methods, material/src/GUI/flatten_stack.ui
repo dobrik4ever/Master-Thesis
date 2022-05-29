@@ -6,21 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>735</width>
-    <height>482</height>
+    <width>1132</width>
+    <height>447</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
-   <item>
-    <widget class="QGroupBox" name="Image_groupBox">
-     <property name="title">
-      <string>ImageFname</string>
-     </property>
-    </widget>
-   </item>
    <item>
     <widget class="QGroupBox" name="sliders_groupBox">
      <property name="maximumSize">
@@ -36,51 +29,59 @@
       <item>
        <widget class="QGroupBox" name="groupBox">
         <property name="title">
-         <string>Denoise</string>
+         <string>Depth slicing</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
            <item>
-            <widget class="QLabel" name="label">
-             <property name="text">
-              <string>Kernel size</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSlider" name="denoise_ksize_Slider">
-             <property name="minimum">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <number>10</number>
-             </property>
+            <widget class="QSlider" name="slider_depth_selector">
              <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <enum>Qt::Vertical</enum>
              </property>
-             <property name="invertedControls">
-              <bool>false</bool>
-             </property>
-             <property name="tickPosition">
-              <enum>QSlider::NoTicks</enum>
-             </property>
-             <property name="tickInterval">
-              <number>1</number>
+             <property name="invertedAppearance">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="denoise_ksize_slider_label">
-             <property name="text">
-              <string>1</string>
-             </property>
-            </widget>
+            <layout class="QVBoxLayout" name="verticalLayout_4">
+             <item>
+              <widget class="QLabel" name="label_image_sideview">
+               <property name="text">
+                <string>IMAGE</string>
+               </property>
+               <property name="scaledContents">
+                <bool>true</bool>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSlider" name="slider_slice_selector">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Slice: 0</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
            <item>
             <spacer name="horizontalSpacer">
              <property name="orientation">
@@ -95,16 +96,22 @@
             </spacer>
            </item>
            <item>
-            <widget class="QLabel" name="label_2">
+            <widget class="QLabel" name="label">
              <property name="text">
-              <string>Use denoise</string>
+              <string>Channel</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="denoise_checkBox">
-             <property name="text">
-              <string/>
+            <widget class="QSpinBox" name="spinBox_channel_selector">
+             <property name="minimum">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <number>2</number>
+             </property>
+             <property name="value">
+              <number>0</number>
              </property>
             </widget>
            </item>
@@ -116,7 +123,7 @@
       <item>
        <widget class="QGroupBox" name="groupBox_2">
         <property name="title">
-         <string>Depth averaging</string>
+         <string>Depth filtering</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
@@ -124,12 +131,12 @@
            <item>
             <widget class="QLabel" name="label_3">
              <property name="text">
-              <string>N slices to average</string>
+              <string>N slices to filter</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QSlider" name="slices_average_Slider">
+            <widget class="QSlider" name="slider_slices_average">
              <property name="minimum">
               <number>1</number>
              </property>
@@ -149,6 +156,36 @@
             </widget>
            </item>
           </layout>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="radioButton_nofiltering">
+           <property name="text">
+            <string>None</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="radioButton_median_filtering">
+           <property name="text">
+            <string>Median</string>
+           </property>
+           <property name="checked">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="radioButton_average_filtering">
+           <property name="text">
+            <string>Average</string>
+           </property>
+           <property name="checked">
+            <bool>false</bool>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -176,39 +213,83 @@
      </layout>
     </widget>
    </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox_3">
+     <property name="title">
+      <string>MAX Image before processing</string>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_6">
+      <item>
+       <widget class="QLabel" name="label_image_initial">
+        <property name="text">
+         <string>IMAGE</string>
+        </property>
+        <property name="scaledContents">
+         <bool>true</bool>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="Image_groupBox">
+     <property name="title">
+      <string>MAX Image after processing</string>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <item>
+       <widget class="QLabel" name="label_image_processed">
+        <property name="text">
+         <string>IMAGE</string>
+        </property>
+        <property name="scaledContents">
+         <bool>true</bool>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
   </layout>
  </widget>
  <resources/>
  <connections>
   <connection>
-   <sender>denoise_ksize_Slider</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>denoise_ksize_slider_label</receiver>
-   <slot>setNum(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>574</x>
-     <y>88</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>691</x>
-     <y>78</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>slices_average_Slider</sender>
+   <sender>slider_slices_average</sender>
    <signal>valueChanged(int)</signal>
    <receiver>slices_average_Slider_label</receiver>
    <slot>setNum(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>655</x>
-     <y>331</y>
+     <x>266</x>
+     <y>247</y>
     </hint>
     <hint type="destinationlabel">
-     <x>689</x>
-     <y>330</y>
+     <x>280</x>
+     <y>247</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>slider_depth_selector</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>label_2</receiver>
+   <slot>setNum(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>54</x>
+     <y>120</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>73</x>
+     <y>160</y>
     </hint>
    </hints>
   </connection>

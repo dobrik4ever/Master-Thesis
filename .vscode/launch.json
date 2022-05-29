@@ -11,6 +11,14 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Python: run.py",
+            "type": "python",
+            "request": "launch",
+            "program": "3 Methods, material/src/run.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }

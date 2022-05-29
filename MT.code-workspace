@@ -2,10 +2,9 @@
 	"folders": [
 		{
 			"path": "."
-		},
-		{
-			"path": "../../summer_21/Mini Thesis"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"qtForPython.designer.path": "/Applications/Designer.app"
+	}
 }
