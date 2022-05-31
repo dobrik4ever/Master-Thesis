@@ -13,6 +13,15 @@
             "justMyCode": true
         },
         {
+            "name": "Python: DataGenerator",
+            "type": "python",
+            "request": "launch",
+            "cwd": "3 Methods, material",
+            "program": "src/Network/DataGenerator",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "Python: run.py",
             "type": "python",
             "request": "launch",
