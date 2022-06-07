@@ -2,9 +2,12 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "3 Methods, material/src"
 		}
 	],
 	"settings": {
-		"qtForPython.designer.path": "/Applications/Designer.app"
+		"todo-tree.tree.showBadges": true
 	}
 }
