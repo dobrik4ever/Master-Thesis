@@ -3,7 +3,7 @@ from skimage import transform
 import opensimplex
 
 class NoiseBlob:
-
+    default_size = 20
     def __init__(self, size):
         self.size = size
 
@@ -71,7 +71,7 @@ class NoiseBlob:
 
         # Sampling from noise domain
         c = N//2
-        a = np.linspace(0,2*np.pi,N*10)
+        a = np.linspace(0,2*np.pi,N*20) # NOTE: Increase number of points, if there is a stringing artifact
         r = N//2-1
 
         x = np.rint(r * np.cos(a) + c).astype(int)
@@ -95,14 +95,10 @@ class Cell:
     Returns:
         Cell: self
     """
-    # gamma_nucleus = 1.5
-    # circ_nucleus = 2.5
-    # gamma_cytoplasm = 1
-    # circ_cytoplasm = 2
-    # gamma_cytoplasm_texture = 1
-
-    def __init__(self,  cytoplasm_size,
-                        nucleus_size,
+    blob_resolution = 30
+    def __init__(self,  size_cytoplasm,
+                        size_nucleus,
+                        dx, dy, dz,
                         gamma_nucleus,
                         circ_nucleus,
                         gamma_cytoplasm,
@@ -113,16 +109,24 @@ class Cell:
         """Cell generator, based on opensimplex noise generation
 
         Args:
-            cytoplasm_size (int): radius of cytoplasm in pixels
-            nucleus_size (int): radius of nucleus in pixels
+            cytoplasm_size (float): diameter of cytoplasm in microns
+            nucleus_size (float): diameter of nucleus in microns
+            dx (float): pixel size in x direction in microns
+            dy (float): pixel size in y direction in microns
+            dz (float): pixel size in z direction in microns
             gamma_nucleus (float): noise parameter, defines the shape of nucleus. Typical values are between 0.5 and 1.5
             circ_nucleus (float): circularity of cytoplasm. Defines the shape of cytoplasm. Typical values are between 1 and 2
             gamma_cytoplasm (float): noise parameter, defines the shape of cytoplasm. Typical values are between 0.1 and 1.5
             circ_cytoplasm (float): circularity of cytoplasm. Defines the shape of cytoplasm. Typical values are between 1 and 3
             gamma_cytoplasm_texture (float): noise parameter, defines the frequency of cytoplasm texture. Typical values are between 0.01 and 2
+            lowest_intensity (float): lowest intensity of cytoplasm. Typical values are between 0.1 and 0.5
         """
-        self.size_cytoplasm = cytoplasm_size
-        self.nucleus_size = nucleus_size
+
+        self.size_cytoplasm = size_cytoplasm 
+        self.size_nucleus = size_nucleus 
+        self.dx = dx
+        self.dy = dy
+        self.dz = dz
 
         self.gamma_nucleus = gamma_nucleus
         self.circ_nucleus = circ_nucleus
@@ -136,6 +140,27 @@ class Cell:
         self.texture_cytoplasm = None
         self.image = None
 
+    def run(self):
+        self.generate_cytoplasm()
+        self.generate_nucleus()
+        self.position_nucleus()
+        self.apply_texture()
+        self.scale_to_size()
+
+    def _resize(self, arr, size):
+        h, w = arr.shape
+        ar_xy = w / h
+        ar_yx = h / w
+        x_out = size * ar_xy / self.dx
+        y_out = size * ar_yx / self.dy
+        return transform.resize(arr, (int(y_out), int(x_out)), anti_aliasing=False)
+    
+    def scale_to_size(self):
+        self.mask_cytoplasm = self._resize(self.mask_cytoplasm, self.size_cytoplasm).astype(bool)
+        # self.mask_nucleus = self._resize(self.mask_nucleus)
+        # self.texture_cytoplasm = self._resize(self.texture_cytoplasm)
+        self.image = self._resize(self.image, self.size_cytoplasm)
+
     def _normalize(self, arr):
         arr -= arr.min()
         arr /= arr.max()
@@ -147,18 +172,12 @@ class Cell:
         shifted = shifted.astype(image.dtype)
         return shifted
 
-    def run(self):
-        self.generate_cytoplasm()
-        self.generate_nucleus()
-        self.position_nucleus()
-        self.apply_texture()
-        
     def generate_nucleus(self):
-        NB = NoiseBlob(size=self.nucleus_size)
+        NB = NoiseBlob(size=self.blob_resolution * self.size_nucleus / self.size_cytoplasm)
         self.mask_nucleus = NB.make_mask(self.gamma_nucleus, self.circ_nucleus)
 
     def generate_cytoplasm(self):
-        NB = NoiseBlob(size=self.size_cytoplasm)
+        NB = NoiseBlob(size=self.blob_resolution)
         self.mask_cytoplasm = NB.make_mask(self.gamma_cytoplasm, self.circ_cytoplasm)
         self.texture_cytoplasm = NB.make_texture(self.gamma_cytoplasm_texture)
 
@@ -190,17 +209,23 @@ class Cell:
 
 if __name__ == '__main__':
     from matplotlib import pyplot as plt
-    c = Cell(   cytoplasm_size          = 20,
-                nucleus_size            = 10,
-                gamma_nucleus           = 1.5,
-                circ_nucleus            = 2.5,
-                gamma_cytoplasm         = 1.0,
-                circ_cytoplasm          = 2.0,
-                gamma_cytoplasm_texture = .2,
-                lowest_intensity = 0.4)
+    dx = dy = dz = 0.5
+
+    c = Cell(  
+        size_cytoplasm          = 30,
+        size_nucleus            = 10,
+        dx = dx, dy = dy, dz = dz,
+        gamma_nucleus           = 1.5,
+        circ_nucleus            = 2,
+        gamma_cytoplasm         = 0.5,
+        circ_cytoplasm          = 2.0,
+        gamma_cytoplasm_texture = .5,
+        lowest_intensity        = 0.5)
+
     c.run()
 
-    fig, ax = plt.subplots(1,1)
-    ax.imshow(c.image)
+    fig, ax = plt.subplots(1,2)
+    ax[0].imshow(c.image, extent=[0, c.image.shape[1]*c.dx, 0, c.image.shape[0]*c.dy])
+    ax[1].imshow(c.mask_cytoplasm, extent=[0, c.image.shape[1]*c.dx, 0, c.image.shape[0]*c.dy])
     plt.show()
             
