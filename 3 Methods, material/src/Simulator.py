@@ -1,5 +1,5 @@
 from copy import copy
-from CellSimulator import Cell
+from src import Cell
 import numpy as np
 from skimage import transform, filters
 import matplotlib.pyplot as plt
@@ -123,6 +123,6 @@ if __name__ == '__main__':
     sim.run()
     plt.figure(figsize =(12,12))
 
-    plt.imshow(sim.image)
+    plt.imshow(sim.image, cmap='gray')
     plt.colorbar()
     plt.show()
