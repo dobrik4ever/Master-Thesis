@@ -2,10 +2,21 @@ import numpy as np
 from skimage import transform
 import opensimplex
 
+def cartesian2polar(x, y):
+    r = np.sqrt(x**2 + y**2)
+    theta = np.arctan2(y, x)
+    return theta, r
+
+def polar2cartesian(theta, r):
+    x = r * np.cos(theta)
+    y = r * np.sin(theta)
+    return x, y
+    
 class NoiseBlob:
     default_size = 20
-    def __init__(self, size):
+    def __init__(self, size, polygon_N=None):
         self.size = size
+        self.polygon_N = polygon_N
 
         self.mask = None
         self.texture = None
@@ -80,10 +91,45 @@ class NoiseBlob:
         noise_patch = A[x, y]
 
         # Adding noise to circle contour with weight circularity
-        contour = np.ones_like(noise_patch) * circularity
-        contour += noise_patch
+        fundamental_mode = np.ones_like(noise_patch) * circularity
+        contour = fundamental_mode + noise_patch
+        if self.polygon_N:
+            pb = PolygonBlob(self.polygon_N)
+            contour += pb.gen_polygon()
         contour /= contour.mean()
         return contour, a
+
+class PolygonBlob:
+
+    def __init__(self, N):
+        self.N = N
+
+    def gen_polygon(self, sampling_points):
+        theta = np.linspace(0, 2*np.pi - 2*np.pi/self.N, self.N)
+        r = np.random.random(self.N)
+
+        X = r*np.cos(theta)
+        Y = r*np.sin(theta)
+        RR = np.zeros(self.N * self.sampling_points)
+        TT = np.zeros(self.N * self.sampling_points)
+        for i in range(self.N):
+            x0, x1 = X[i-1], X[i]
+            y0, y1 = Y[i-1], Y[i]
+            
+            A = np.array([
+                [x0, 1],
+                [x1, 1],
+            ])
+            An = np.linalg.inv(A)
+            b = np.array([y0, y1])
+            a, b = np.dot(An, b)
+            x = np.linspace(x0, x1, self.sampling_points)
+            y = a * x + b
+            T, R = cartesian2polar(x, y)
+            TT[i*self.sampling_points:(i+1)*self.sampling_points] = T
+            RR[i*self.sampling_points:(i+1)*self.sampling_points] = R
+
+        return TT, RR
 
 class Cell:
     """Class for generating a cell
@@ -120,6 +166,7 @@ class Cell:
             circ_cytoplasm (float): circularity of cytoplasm. Defines the shape of cytoplasm. Typical values are between 1 and 3
             gamma_cytoplasm_texture (float): noise parameter, defines the frequency of cytoplasm texture. Typical values are between 0.01 and 2
             lowest_intensity (float): lowest intensity of cytoplasm. Typical values are between 0.1 and 0.5
+            polygon_N (int): number of sides of polygonal blob
         """
 
         self.size_cytoplasm = size_cytoplasm 
@@ -160,6 +207,7 @@ class Cell:
         # self.mask_nucleus = self._resize(self.mask_nucleus)
         # self.texture_cytoplasm = self._resize(self.texture_cytoplasm)
         self.image = self._resize(self.image, self.size_cytoplasm)
+        self.cell_shape = self.image.shape
 
     def _normalize(self, arr):
         arr -= arr.min()

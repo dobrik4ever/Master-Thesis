@@ -7,6 +7,7 @@ import tqdm
 
 
 class Simulator:
+    cell_pos_tries_number = 1000
 
     def __init__(self,  canvas_shape,
                         list_of_cells,
@@ -58,6 +59,13 @@ class Simulator:
         mask = self._expand(cell.mask_cytoplasm)
         mask = self._shift(mask, pos)
         return mask
+
+    def show(self):
+        h, w = self.canvas_shape
+        plt.imshow(self.image, extent=[0,w*self.dx, h*self.dy, 0], cmap='gray')
+        plt.xlabel('X, $\mu m$')
+        plt.ylabel('Y, $\mu m$')
+        plt.show()
     
     @normalize
     def apply_filter(self):
@@ -65,8 +73,8 @@ class Simulator:
 
     @normalize
     def apply_noise(self):
-        self.image *= (np.random.random(self.canvas_shape)+self.noise_signal_level)
         self.image += np.random.random(self.canvas_shape)*self.noise_background_level
+        self.image *= (np.random.random(self.canvas_shape)+self.noise_signal_level)
 
     @normalize
     def populate(self):
@@ -75,8 +83,8 @@ class Simulator:
             C.run()
             terminate = 0
             while True:
-                y = np.random.randint(0, self.canvas_shape[0])
-                x = np.random.randint(0, self.canvas_shape[1])
+                y = np.random.randint(0, self.canvas_shape[0] - C.cell_shape[0])
+                x = np.random.randint(0, self.canvas_shape[1] - C.cell_shape[1])
                 mask = self.position_cell(C, (-y, -x))
                 if np.any(self.mask[mask]):
                     terminate += 1
@@ -86,7 +94,7 @@ class Simulator:
                     self.mask += mask
                     self.image[mask] = image[mask]
                     break
-                if terminate == 100:
+                if terminate == self.cell_pos_tries_number:
                     raise RuntimeError('Could not position cell, try to decrease cell size or increase simulation size')
 
 if __name__ == '__main__':
@@ -123,6 +131,7 @@ if __name__ == '__main__':
     sim.run()
     plt.figure(figsize =(12,12))
 
-    plt.imshow(sim.image, cmap='gray')
-    plt.colorbar()
-    plt.show()
+    sim.show()
+    # plt.imshow(sim.image, cmap='gray')
+    # plt.colorbar()
+    # plt.show()
