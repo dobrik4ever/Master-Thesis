@@ -2,18 +2,20 @@ import numpy as np
 from skimage import transform
 import opensimplex
 
-def cartesian2polar(x, y):
-    r = np.sqrt(x**2 + y**2)
-    theta = np.arctan2(y, x)
-    return theta, r
+def spherical2cartesian(R, T, P):
+    x = R * np.cos(T) * np.sin(P)
+    y = R * np.sin(T) * np.sin(P)
+    z = R * np.cos(P)
+    return x, y, z
 
-def polar2cartesian(theta, r):
-    x = r * np.cos(theta)
-    y = r * np.sin(theta)
-    return x, y
-    
-class NoiseBlob:
-    default_size = 30
+def cartesian2spherical(x, y, z):
+    R = np.sqrt(x**2 + y**2 + z**2)
+    T = np.arctan2(y, x)
+    P = np.arccos(z/R)
+    return R, T, P
+
+class NoiseBlob3D:
+    default_size = 10
     def __init__(self, size):
         self.size = size
 
@@ -21,8 +23,8 @@ class NoiseBlob:
         self.texture = None
 
     def make_mask(self, gamma, circularity):
-        contour, angular_span = self.generate_contour(gamma, circularity)
-        self.mask = self.generate_blob(contour, angular_span).astype(bool)
+        contour, T, P = self.generate_contour(gamma, circularity)
+        self.mask = self.generate_blob(contour, T, P).astype(bool)
         return self.mask
 
     def make_texture(self, gamma):
@@ -40,95 +42,78 @@ class NoiseBlob:
             np.maximum.accumulate(arr[::-1, :], 0)[::-1, :] * \
             np.maximum.accumulate(arr, 0)
 
-    def generate_blob(self, contour, angular_span):
+    def generate_blob(self, contour, T, P):
         # Generate a mask
-        i = np.rint(contour * self.size * np.cos(angular_span)).astype(int)
-        j = np.rint(contour * self.size * np.sin(angular_span)).astype(int)
+        i, j, k = spherical2cartesian(contour, T, P)
+        i *= self.size
+        j *= self.size
+        k *= self.size
 
         i -= i.min()
         j -= j.min()
-        # i += 1
-        # j += 1
+        k -= k.min()
 
-        h = i.max() + 1
-        w = j.max() + 1
+        i = i.astype(int)
+        j = j.astype(int)
+        k = k.astype(int)
 
-        mask = np.zeros([h,w])
-        mask[i,j] = 1
+        h = (i.max() + 1).astype(int)
+        w = (j.max() + 1).astype(int)
+        d = (k.max() + 1).astype(int)
+
+        O = 10
+        o = O//2
+
+        mask = np.zeros([h+O, w+O, d+O])
+        mask[i+o, j+o, k+o] = 1
         mask = self.fill_contours(mask)
         self.mask = mask
 
         return mask
+
+
+    def generate_contour(self, gamma, circularity):
+        # Creating a noise domain
+        N = 100
+        sampling_mult = 2
+        A = self.generate_noise((N, N, N), gamma)
+
+        # Sampling from noise domain
+        c = N//2
+        r = N//2-1
+        t = np.linspace(0,np.pi,N*sampling_mult) # NOTE: Increase number of points, if there is a stringing artifact
+        p = np.linspace(0,2*np.pi,N*sampling_mult) # NOTE: Increase number of points, if there is a stringing artifact
+        r = np.ones_like(t) * r
+        R, T, P = np.meshgrid(r, t, p)
+
+        x, y, z = spherical2cartesian(R, T, P)
+        x = (x + c).astype(int)
+        y = (y + c).astype(int)
+        z = (z + c).astype(int)
+        noise_patch = A[x, y, z]
+
+        # Adding noise to circle contour with weight circularity
+        fundamental_mode = np.ones_like(noise_patch) * circularity
+        contour = fundamental_mode + noise_patch
+        contour /= contour.max()
+        return contour, T, P
 
     def generate_noise(self, shape, gamma):
         N = max(shape)
         A = np.zeros(shape)
         # np.random.seed(5)
         for i in range(50):
-            z = np.random.rand()*N*1.5
-            x = np.linspace(z, z + i, shape[1])
-            y = np.linspace(z, z + i, shape[0])
-            a = opensimplex.noise2array(x, y)*np.exp(-i*gamma)
+            p = np.random.rand()*N*1.5
+            y = np.linspace(p, p + i, shape[0])
+            x = np.linspace(p, p + i, shape[1])
+            z = np.linspace(p, p + i, shape[2])
+            a = opensimplex.noise3array(z, x, y)*np.exp(-i*gamma)
             A += a
 
         A /= np.abs(A).max()
         return A
 
-    def generate_contour(self, gamma, circularity):
-        # Creating a noise domain
-        N = 100
-        sampling_mult = 2
-        A = self.generate_noise((N,N), gamma)
-
-        # Sampling from noise domain
-        c = N//2
-        a = np.linspace(0,2*np.pi,N*sampling_mult) # NOTE: Increase number of points, if there is a stringing artifact
-        r = N//2-1
-
-        x = np.rint(r * np.cos(a) + c).astype(int)
-        y = np.rint(r * np.sin(a) + c).astype(int)
-
-        noise_patch = A[x, y]
-
-        # Adding noise to circle contour with weight circularity
-        fundamental_mode = np.ones_like(noise_patch) * circularity
-        contour = fundamental_mode + noise_patch
-        contour /= contour.mean()
-        return contour, a
-
-class PolygonBlob:
-
-    def __init__(self, N):
-        self.N = N
-
-    def gen_polygon(self, sampling_points):
-        theta = np.linspace(0, 2*np.pi - 2*np.pi/self.N, self.N)
-        r = np.random.random(self.N)
-
-        X = r*np.cos(theta)
-        Y = r*np.sin(theta)
-        RR = np.zeros(self.N * self.sampling_points)
-        TT = np.zeros(self.N * self.sampling_points)
-        for i in range(self.N):
-            x0, x1 = X[i-1], X[i]
-            y0, y1 = Y[i-1], Y[i]
-            
-            A = np.array([
-                [x0, 1],
-                [x1, 1],
-            ])
-            An = np.linalg.inv(A)
-            b = np.array([y0, y1])
-            a, b = np.dot(An, b)
-            x = np.linspace(x0, x1, self.sampling_points)
-            y = a * x + b
-            T, R = cartesian2polar(x, y)
-            TT[i*self.sampling_points:(i+1)*self.sampling_points] = T
-            RR[i*self.sampling_points:(i+1)*self.sampling_points] = R
-
-        return TT, RR
-
-class Cell:
+class Cell3D:
     """Class for generating a cell
 
     Raises:
@@ -191,18 +176,18 @@ class Cell:
         self.apply_texture()
         self.scale_to_size()
 
-    def _resize(self, arr, size):
-        h, w = arr.shape
+    def _resize(self, arr:np.ndarray, size:float):
+        h, w, d = arr.shape
         ar_xy = w / h
         ar_yx = h / w
+        ar_zx = d / w
         x_out = size * ar_xy / self.dx
         y_out = size * ar_yx / self.dy
-        return transform.resize(arr, (int(y_out), int(x_out)), anti_aliasing=False)
+        z_out = size * ar_zx / self.dz
+        return transform.resize(arr, (int(y_out), int(x_out), int(z_out)), anti_aliasing=False)
     
     def scale_to_size(self):
         self.mask_cytoplasm = self._resize(self.mask_cytoplasm, self.size_cytoplasm).astype(bool)
-        # self.mask_nucleus = self._resize(self.mask_nucleus)
-        # self.texture_cytoplasm = self._resize(self.texture_cytoplasm)
         self.image = self._resize(self.image, self.size_cytoplasm)
         self.cell_shape = self.image.shape
 
@@ -211,33 +196,30 @@ class Cell:
         arr /= arr.max()
         return arr
 
-    def _shift(self,image, vector):
-        tr = transform.AffineTransform(translation=vector)
-        shifted = transform.warp(image, tr, preserve_range=True)
-        shifted = shifted.astype(image.dtype)
-        return shifted
-
     def generate_nucleus(self):
-        NB = NoiseBlob(size=self.blob_resolution * self.size_nucleus / self.size_cytoplasm)
+        NB = NoiseBlob3D(size=self.blob_resolution * self.size_nucleus / self.size_cytoplasm)
         self.mask_nucleus = NB.make_mask(self.gamma_nucleus, self.circ_nucleus)
 
     def generate_cytoplasm(self):
-        NB = NoiseBlob(size=self.blob_resolution)
+        NB = NoiseBlob3D(size=self.blob_resolution)
         self.mask_cytoplasm = NB.make_mask(self.gamma_cytoplasm, self.circ_cytoplasm)
         self.texture_cytoplasm = NB.make_texture(self.gamma_cytoplasm_texture)
 
     def position_nucleus(self):
-        hc, wc = self.mask_cytoplasm.shape
-        hn, wn = self.mask_nucleus.shape
-
-        mask_nucleus = np.pad(self.mask_nucleus, ((0,hc-hn), (0,wc-wn)), 'constant', constant_values=0)
-
         terminator = 0
         while terminator <= 100:
+            hc, wc, dc = self.mask_cytoplasm.shape
+            hn, wn, dn = self.mask_nucleus.shape
+
             x = np.random.randint(0, wc-wn)
             y = np.random.randint(0, hc-hn)
+            z = np.random.randint(0, dc-dn)
 
-            shifted = self._shift(mask_nucleus, (-y, -x))
+            ys = hc - hn - y
+            xs = wc - wn - x
+            zs = dc - dn - z
+
+            shifted = np.pad(self.mask_nucleus, ((y,ys), (x,xs), (z,zs)), 'constant', constant_values=0)
             if np.all(self.mask_cytoplasm[shifted]):
                 break
             else:
@@ -253,24 +235,29 @@ class Cell:
         self.image = self._normalize(self.image)
 
 if __name__ == '__main__':
-    from matplotlib import pyplot as plt
-    dx = dy = dz = 0.5
+    import napari
 
-    c = Cell(  
+    dx = dy = 1
+    dz = 1
+    cell = Cell3D( 
         size_cytoplasm          = 30,
         size_nucleus            = 10,
         dx = dx, dy = dy, dz = dz,
         gamma_nucleus           = 1.5,
         circ_nucleus            = 2,
-        gamma_cytoplasm         = 0.5,
+        gamma_cytoplasm         = 1,
         circ_cytoplasm          = 2.0,
-        gamma_cytoplasm_texture = .5,
-        lowest_intensity        = 0.5)
+        gamma_cytoplasm_texture = .1,
+        lowest_intensity        = 0.1)
 
-    c.run()
-
-    fig, ax = plt.subplots(1,2)
-    ax[0].imshow(c.image, extent=[0, c.image.shape[1]*c.dx, 0, c.image.shape[0]*c.dy])
-    ax[1].imshow(c.mask_cytoplasm, extent=[0, c.image.shape[1]*c.dx, 0, c.image.shape[0]*c.dy])
-    plt.show()
-            
+    print('make cell')
+    cell.run()
+    # np.save('cell.npy', cell.image)
+    print('open napari')
+    viewer = napari.Viewer()
+    viewer.add_image(cell.image,
+                        name='cell',
+                        blending='additive',
+                        colormap='gray',
+                        rendering='mip')
+    napari.run()
