@@ -1,6 +1,11 @@
 import numpy as np
 from skimage import transform
 import opensimplex
+try:
+    import napari
+except ImportError:
+    print('Could not import napari. Skipping visualization.')
+    pass
 
 def spherical2cartesian(R, T, P):
     x = R * np.cos(T) * np.sin(P)
@@ -228,6 +233,12 @@ class Cell3D:
                     raise RuntimeError('Could not position nucleus, try to decrease nucleus size or increase cytoplasm size')
 
         self.mask_cytoplasm[shifted] = 0
+
+    def show(self):
+        viewer = napari.Viewer()
+        viewer.add_image(self.image, colormap='gray', rendering='average')
+        viewer.dims.ndisplay = 3
+        napari.run()
 
     def apply_texture(self):
         self.image = np.zeros_like(self.texture_cytoplasm)
