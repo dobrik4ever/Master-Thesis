@@ -34,7 +34,8 @@
             "name": "Python: run.py",
             "type": "python",
             "request": "launch",
-            "program": "3 Methods, material/src/run.py",
+            "cwd": "3 Methods, material",
+            "program": "run.py",
             "console": "integratedTerminal",
             "justMyCode": true
         }

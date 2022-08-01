@@ -1,6 +1,7 @@
 import numpy as np
 from skimage import transform
 import opensimplex
+from numba import njit
 try:
     import napari
 except ImportError:
@@ -129,6 +130,8 @@ class Cell3D:
         Cell: self
     """
     blob_resolution = 30
+    cell_pos_tries_number = 1000
+
     def __init__(self,  size_cytoplasm,
                         size_nucleus,
                         dx, dy, dz,
@@ -153,7 +156,6 @@ class Cell3D:
             circ_cytoplasm (float): circularity of cytoplasm. Defines the shape of cytoplasm. Typical values are between 1 and 3
             gamma_cytoplasm_texture (float): noise parameter, defines the frequency of cytoplasm texture. Typical values are between 0.01 and 2
             lowest_intensity (float): lowest intensity of cytoplasm. Typical values are between 0.1 and 0.5
-            polygon_N (int): number of sides of polygonal blob
         """
 
         self.size_cytoplasm = size_cytoplasm 
@@ -212,7 +214,8 @@ class Cell3D:
 
     def position_nucleus(self):
         terminator = 0
-        while terminator <= 100:
+        while terminator <= self.cell_pos_tries_number:
+
             hc, wc, dc = self.mask_cytoplasm.shape
             hn, wn, dn = self.mask_nucleus.shape
 
@@ -229,7 +232,7 @@ class Cell3D:
                 break
             else:
                 terminator += 1
-                if terminator == 100:
+                if terminator >= self.cell_pos_tries_number:
                     raise RuntimeError('Could not position nucleus, try to decrease nucleus size or increase cytoplasm size')
 
         self.mask_cytoplasm[shifted] = 0
@@ -244,6 +247,10 @@ class Cell3D:
         self.image = np.zeros_like(self.texture_cytoplasm)
         self.image[self.mask_cytoplasm] = self.texture_cytoplasm[self.mask_cytoplasm] + self.lowest_intensity
         self.image = self._normalize(self.image)
+
+    @property
+    def center(self):
+        return np.array(self.cell_shape) // 2
 
 if __name__ == '__main__':
     import napari
