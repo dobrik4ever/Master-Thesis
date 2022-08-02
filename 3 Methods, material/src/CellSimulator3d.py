@@ -172,9 +172,11 @@ class Cell3D:
         self.lowest_intensity = lowest_intensity
 
         self.mask_cytoplasm = None
+        self.mask_membrane = None # TODO: get membrane mask
         self.mask_nucleus = None
         self.texture_cytoplasm = None
         self.image = None
+        # TODO: get texture image
 
     def run(self):
         self.generate_cytoplasm()

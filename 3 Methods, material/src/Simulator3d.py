@@ -15,27 +15,26 @@ except ImportError:
     pass
 
 class Simulator3D:
+    #TODO: write description
     cell_pos_tries_number = 1000
 
     def __init__(self,  canvas_shape,
-                        list_of_cells,
+                        list_of_cell_types,
                         cell_number,
-                        dx, dy, dz,
                         sigma,
                         noise_signal_level,
                         noise_background_level):
 
         self.canvas_shape = canvas_shape
-        self.list_of_cells = list_of_cells
+        self.list_of_cells_types = list_of_cell_types
         self.cell_number = cell_number
-        self.dx = dx; self.dy = dy; self.dz = dz
         self.sigma = sigma
         self.noise_signal_level = noise_signal_level
         self.noise_background_level = noise_background_level
 
-        self.N_classes = len(list_of_cells)
+        self.N_classes = len(list_of_cell_types)
         self.coordinates = {}
-        for cell in self.list_of_cells:
+        for cell in self.list_of_cells_types:
             self.coordinates[cell] = []
         self.image = np.zeros(canvas_shape)
         self.mask  = np.zeros(canvas_shape)
@@ -52,8 +51,8 @@ class Simulator3D:
 
     def run(self):
         self.populate()
-        # self.apply_filter()
-        # self.apply_noise()       
+        self.apply_filter()
+        self.apply_noise()       
         return self.image
 
     def position_cell(self, cell, pos):
@@ -68,7 +67,7 @@ class Simulator3D:
 
         # Visualize points of cells
         df = self.get_points_csv()
-        for i, cell in enumerate(self.list_of_cells):
+        for i, cell in enumerate(self.list_of_cells_types):
             CLASS = cell.__class__.__name__
             points = df[df['class'] == CLASS].drop('class', axis=1)
             viewer.add_points(points, name=CLASS, face_color=cmaps[i], size=3)
@@ -91,7 +90,7 @@ class Simulator3D:
     def get_point_mask(self):
         output_mask = np.zeros((self.N_classes, *self.image.shape))
         for key in self.coordinates:
-            class_index = self.list_of_cells.index(key)
+            class_index = self.list_of_cells_types.index(key)
             for coordinate in self.coordinates[key]:
                 y, x, z = coordinate
                 output_mask[class_index][y, x, z] = 1
@@ -122,7 +121,7 @@ class Simulator3D:
     def populate(self):
         pbar = tqdm.trange(self.cell_number)
         for i in pbar:
-            cell = np.random.choice(self.list_of_cells)
+            cell = np.random.choice(self.list_of_cells_types)
             cell.run()
             terminate = 0
             while True:
@@ -164,7 +163,7 @@ if __name__ == '__main__':
     C2 = T_Cell(dx, dy, dz)
 
     sim = Simulator3D(canvas_shape = (100, 100, 100),
-                    list_of_cells = [C1, C2],
+                    list_of_cell_types = [C1, C2],
                     cell_number = 10,
                     dx = dx, dy = dy, dz = dz,
                     sigma = 2,

@@ -1,6 +1,21 @@
 from src import Cell3D
 import numpy as np
 
+class Neutrophil(Cell3D):
+    size_cytoplasm          = 15
+    size_nucleus            = 6
+    gamma_nucleus           = 1.5
+    circ_nucleus            = 2.0
+    gamma_cytoplasm         = 1.0
+    circ_cytoplasm          = 1.5
+    gamma_cytoplasm_texture = 0.1
+    lowest_intensity        = 0.1
+
+    def __init__(self, dx, dy, dz):
+        self.dx = dx
+        self.dy = dy
+        self.dz = dz
+
 class Macrophage(Cell3D):
     size_cytoplasm          = 15
     size_nucleus            = 6
