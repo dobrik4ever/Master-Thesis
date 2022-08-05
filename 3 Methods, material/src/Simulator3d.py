@@ -5,7 +5,7 @@ import numpy as np
 from skimage import transform, filters
 import matplotlib.pyplot as plt
 import tqdm
-from numba import njit
+import os
 import pandas as pd
 
 try:
@@ -97,12 +97,15 @@ class Simulator3D:
         self.output_mask = output_mask
 
     def save(self, path, name, tif=False):
-        # TODO: save image and mask
+        fname = f'{path}/{name}.npy'
         if not self.output_mask: self.get_point_mask()
-        np.save(f'{path}/{name}.npy', self.image)
+        if os.path.exists(fname): os.remove(fname)
+        np.save(fname, self.image)
 
         if tif:
             from skimage import io
+            fname = f'{path}/{name}.tif'
+            if os.path.exists(fname): os.remove(fname)
             io.imsave(f'{path}/{name}.tif', self.image)
 
         if not self.df_points: self.get_points_csv()

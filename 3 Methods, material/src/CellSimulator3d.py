@@ -1,7 +1,8 @@
 import numpy as np
 from skimage import transform
 import opensimplex
-from numba import njit
+import os
+
 try:
     import napari
 except ImportError:
@@ -9,16 +10,36 @@ except ImportError:
     pass
 
 def spherical2cartesian(R, T, P):
-    x = R * np.cos(T) * np.sin(P)
-    y = R * np.sin(T) * np.sin(P)
-    z = R * np.cos(P)
-    return x, y, z
+    def calculate_and_save():
+        sinT = np.sin(T)
+        sinP = np.sin(P)
+        cosT = np.sqrt(1 - np.square(sinT))
+        cosP = np.sqrt(1 - np.square(sinP))
+        indcs_T = (T > np.pi/2) & (T < 3*np.pi/2)
+        indcs_P = (P > np.pi/2) & (P < 3*np.pi/2)
 
-def cartesian2spherical(x, y, z):
-    R = np.sqrt(x**2 + y**2 + z**2)
-    T = np.arctan2(y, x)
-    P = np.arccos(z/R)
-    return R, T, P
+        cosT[indcs_T] *= -1
+        cosP[indcs_P] *= -1
+        data = np.vstack([[sinT], [sinP], [cosT], [cosP]])
+        np.save('trigonometric_dump.npy', data)
+    
+    if os.path.exists('trigonometric_dump.npy'):
+        data = np.load('trigonometric_dump.npy')
+        
+        if data[0].shape != T.shape:
+            calculate_and_save()
+        else:
+            sinT = data[0]
+            sinP = data[1]
+            cosT = data[2]
+            cosP = data[3]
+    else:
+        calculate_and_save()
+
+    x = R * cosT * sinP
+    y = R * sinT * sinP
+    z = R * cosP
+    return x, y, z
 
 class NoiseBlob3D:
     default_size = 10
@@ -107,7 +128,6 @@ class NoiseBlob3D:
     def generate_noise(self, shape, gamma):
         N = max(shape)
         A = np.zeros(shape)
-        # np.random.seed(5)
         for i in range(50):
             p = np.random.rand()*N*1.5
             y = np.linspace(p, p + i, shape[0])
