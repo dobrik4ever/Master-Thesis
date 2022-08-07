@@ -76,8 +76,8 @@ class NoiseBlob:
 
     def generate_contour(self, gamma, circularity):
         # Creating a noise domain
-        N = 100
-        sampling_mult = 2
+        N = self.size*5
+        sampling_mult = 3
         A = self.generate_noise((N,N), gamma)
 
         # Sampling from noise domain

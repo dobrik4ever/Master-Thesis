@@ -1,7 +1,12 @@
 import numpy as np
-from skimage import transform
+from skimage import transform, morphology
 import opensimplex
 import os
+import tqdm
+from matplotlib import pyplot as plt
+
+from tqdm import tqdm
+from src import NoiseBlob
 
 try:
     import napari
@@ -22,19 +27,20 @@ def spherical2cartesian(R, T, P):
         cosP[indcs_P] *= -1
         data = np.vstack([[sinT], [sinP], [cosT], [cosP]])
         np.save('trigonometric_dump.npy', data)
+        return sinT, sinP, cosT, cosP
     
     if os.path.exists('trigonometric_dump.npy'):
         data = np.load('trigonometric_dump.npy')
         
         if data[0].shape != T.shape:
-            calculate_and_save()
+            sinT, sinP, cosT, cosP = calculate_and_save()
         else:
             sinT = data[0]
             sinP = data[1]
             cosT = data[2]
             cosP = data[3]
     else:
-        calculate_and_save()
+        sinT, sinP, cosT, cosP = calculate_and_save()
 
     x = R * cosT * sinP
     y = R * sinT * sinP
@@ -128,7 +134,7 @@ class NoiseBlob3D:
     def generate_noise(self, shape, gamma):
         N = max(shape)
         A = np.zeros(shape)
-        for i in range(50):
+        for i in range(10):
             p = np.random.rand()*N*1.5
             y = np.linspace(p, p + i, shape[0])
             x = np.linspace(p, p + i, shape[1])
@@ -150,7 +156,7 @@ class Cell3D:
         Cell: self
     """
     blob_resolution = 30
-    cell_pos_tries_number = 1000
+    cell_pos_tries_number = 100
 
     def __init__(self,  size_cytoplasm,
                         size_nucleus,
@@ -255,7 +261,10 @@ class Cell3D:
             else:
                 terminator += 1
                 if terminator >= self.cell_pos_tries_number:
-                    raise RuntimeError('Could not position nucleus, try to decrease nucleus size or increase cytoplasm size')
+                    # raise RuntimeError('Could not position nucleus in' + str(type(self).__name__) + ', try to decrease nucleus size or increase cytoplasm size')
+                    print(f'Could not position nucleus in {type(self).__name__}, try to decrease nucleus size or increase cytoplasm size')
+                    self.generate_nucleus()
+                    terminator = 0
 
         self.mask_cytoplasm[shifted] = 0
 
@@ -273,6 +282,62 @@ class Cell3D:
     @property
     def center(self):
         return np.array(self.cell_shape) // 2
+
+class Crypt3D:
+    gamma_crypt = 1.0
+    circ_crypt = 3
+
+    def __init__(self, size, crypt_depth, crypt_dist, dx, dy, dz) -> None:
+        """Crypt3D generates mask with a crypt shape.
+
+        Args:
+            size (float): diameter in microns
+            crypt_depth (int): depth in pixels, must be depth of simulation area
+            dx (float): sampling size in x direction in microns
+            dy (float): sampling size in y direction in microns
+            dz (float): sampling size in z direction in microns
+        """
+        self.size = size
+        self.crypt_depth = crypt_depth
+        self.crypt_dist = crypt_dist
+        self.dx = dx
+        self.dy = dy
+        self.dz = dz
+        
+        self.mask_flat = None
+        self.mask = None
+
+    def run(self):
+        self.generate_crypt()
+        self.scale_to_size()
+        self.extend_crypt()
+        self.crypt_shape = self.mask.shape
+        return self.mask
+
+    def generate_crypt(self):
+        NB = NoiseBlob(size=50)
+        self.mask_flat = NB.make_mask(self.gamma_crypt, self.circ_crypt)
+
+    def extend_crypt(self):
+        self.mask = np.zeros([self.mask_flat.shape[0], self.mask_flat.shape[1], self.crypt_depth])
+        for i in range(self.crypt_depth):
+            self.mask[:, :, i] = self.mask_flat
+
+    def _resize(self, arr, size):
+        h, w = arr.shape
+        ar_xy = w / h
+        ar_yx = h / w
+        x_out = size * ar_xy / self.dx
+        y_out = size * ar_yx / self.dy
+        output = transform.resize(arr, (int(y_out), int(x_out)), anti_aliasing=False).astype(bool)
+        return output
+    
+    def scale_to_size(self):
+        self.mask_flat = self._resize(self.mask_flat, self.size)
+
+    @property
+    def center(self):
+        return np.array(self.crypt_shape) // 2
 
 if __name__ == '__main__':
     import napari

@@ -1,8 +1,8 @@
 from ast import excepthandler
 from copy import copy
-from src import Macrophage, T_Cell
+from src import Macrophage, T_Cell, Crypt3D
 import numpy as np
-from skimage import transform, filters
+from skimage import transform, filters, morphology
 import matplotlib.pyplot as plt
 import tqdm
 import os
@@ -63,7 +63,8 @@ class Simulator3D:
     def show(self):
         cmaps = ['blue', 'red', 'green', 'yellow', 'cyan', 'magenta', 'bop blue', 'bop orange', 'bop purple']
         viewer = napari.Viewer()
-        viewer.add_image(self.image, colormap='gray', blending='additive', rendering='average')
+        viewer.add_image(self.image, name = 'image', colormap='gray', blending='additive', rendering='average')
+        viewer.add_image(self.mask, name = 'mask', rendering='iso', opacity=0.5)
 
         # Visualize points of cells
         df = self.get_points_csv()
@@ -122,7 +123,7 @@ class Simulator3D:
 
     @normalize
     def populate(self):
-        pbar = tqdm.trange(self.cell_number)
+        pbar = tqdm.trange(self.cell_number, desc='Populating cells')
         for i in pbar:
             cell = np.random.choice(self.list_of_cells_types)
             cell.run()
@@ -158,6 +159,71 @@ class Simulator3D:
                     # raise RuntimeError('Could not position cell, try to decrease cell size or increase simulation size')
             if terminate == self.cell_pos_tries_number:
                 break
+        pbar.close()
+
+class Simulator3D_with_crypts(Simulator3D):
+    crypt_size = 100
+    crypt_number = 10
+    crypt_spacing = 60
+    cell_pos_tries_number = 1000
+    def __init__(self,  canvas_shape,
+                        list_of_cell_types,
+                        cell_number,
+                        sigma,
+                        noise_signal_level,
+                        noise_background_level,
+                        dx, dy, dz):
+        super().__init__(canvas_shape, list_of_cell_types, cell_number, sigma, noise_signal_level, noise_background_level)       
+        self.dx = dx
+        self.dy = dy
+        self.dz = dz 
+
+    def run(self):
+        self.populate_crypts()
+        self.populate()
+        self.apply_filter()
+        self.apply_noise()       
+        return self.image
+
+    def populate_crypts(self):
+        pbar = tqdm.trange(self.crypt_number, desc='Populating crypts')
+        crypt = Crypt3D(self.crypt_size, self.canvas_shape[2], self.crypt_spacing, self.dx, self.dy, self.dz)
+        for i in pbar:
+            crypt.run()
+            terminate = 0
+            H, W, D = self.canvas_shape
+            h, w, d = crypt.mask.shape
+
+            if np.any(np.array(self.canvas_shape) - np.array(crypt.crypt_shape) < 0):
+                raise Exception('crypt is too big for canvas, increase canvas size.')
+
+            self.mask2d = self.mask[:,:,0]
+            mask2d = crypt.mask[:,:,0]
+            while True:
+                y = np.random.randint(0, H - h)
+                x = np.random.randint(0, W - w)
+
+                ys = H - h - y
+                xs = W - w - x
+                mask = np.pad(mask2d, ((y,ys), (x,xs)), 'constant', constant_values=0).astype(bool)
+
+                if np.any(self.mask2d[mask]):
+                    terminate += 1
+                else:
+                    self.mask2d += mask
+                    break
+
+                if terminate == self.cell_pos_tries_number:
+                    print('WARNING!: Could not position crypt, try to decrease crypt size or increase simulation size')
+                    print(f'Total cell number is: {i}')
+                    break
+                    # raise RuntimeError('Could not position cell, try to decrease cell size or increase simulation size')
+            if terminate == self.cell_pos_tries_number:
+                break
+
+        for i in range(1,self.mask.shape[2]):
+            self.mask[:,:,i] = self.mask2d
+
         pbar.close()
 
 if __name__ == '__main__':
