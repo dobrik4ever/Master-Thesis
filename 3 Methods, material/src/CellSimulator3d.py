@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 
 from tqdm import tqdm
 from src import NoiseBlob
+# from numba import njit
 
 try:
     import napari
@@ -14,6 +15,7 @@ except ImportError:
     print('Could not import napari. Skipping visualization.')
     pass
 
+# @njit
 def spherical2cartesian(R, T, P):
     def calculate_and_save():
         sinT = np.sin(T)
