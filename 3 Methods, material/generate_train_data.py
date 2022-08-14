@@ -2,17 +2,18 @@ import os
 import tqdm
 import numpy as np
 import pandas as pd
-from utils import Chunkizer, Dataset
+from utils import Chunkizer, DataSet
+from global_settings import stack_size, chunk_size
 
 raw_folder   = 'data/raw'
 train_folder = 'data/train'
 
-chunk_shape = [100,100,100]
 
-dataset = Dataset(raw_folder)
+dataset = DataSet(raw_folder)
 chunkizer = Chunkizer(
-    input_shape=[1000,1000,100],
-    chunk_shape=[100,100,100]   )
+    input_shape=stack_size,
+    chunk_shape=chunk_size
+)
 
 for file in tqdm.trange(dataset.size):
     stack, mask = next(iter(dataset))

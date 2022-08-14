@@ -16,6 +16,8 @@ class Chunkizer:
             stack is truncated.
         """
         self.input_shape = np.array(input_shape)
+        if len(input_shape) > 3:
+            self.input_shape = np.array(input_shape)[1:]
         self.chunk_shape = np.array(chunk_shape)
         self.batch_size = batch_size
         self._check_shapes()
@@ -34,7 +36,10 @@ class Chunkizer:
         """Method divide. Creates a map of chunks of shape [Y, X, Z, y, x, z]
 
         Args:
-            stack (_type_): _description_
+            stack (np.array): 3-dimensional array to be chunkized 
+            
+        Returns:
+            np.array: 6-dimensional map of chunks
         """
         if len(stack.shape) == 4:
             maps = []
@@ -58,11 +63,16 @@ class Chunkizer:
         self.MAP = MAP
         return MAP
 
-    @property
-    def indices(self):
-        return self.input_shape // self.chunk_shape
     
     def assemble(self, MAP):
+        """Method to assemble chunk map into array
+
+        Args:
+            MAP (np.array): 6 dimensional chunk map
+
+        Returns:
+            np.array: assembled array
+        """
         I, J, K = self.chunk_shape
         arr = np.zeros(self.input_shape)
         for i in range(self.indices[0]):
@@ -76,3 +86,7 @@ class Chunkizer:
 
         self.arr = arr
         return arr
+    
+    @property
+    def indices(self):
+        return self.input_shape // self.chunk_shape
