@@ -32,14 +32,16 @@ class DataSet(Dataset):
         df = pd.read_csv(f'{self.folder}/stack_{index}.csv')
         self.classes = df['class'].unique()
         N_classes = len(self.classes)
-        mask = np.zeros([N_classes, *shape])
+        mask = np.zeros([N_classes+1, *shape])
 
+        mask[-1] = 1 # Background generation
         for i, name in enumerate(self.classes):
             y = df[df['class'] == name]['axis-0']
             x = df[df['class'] == name]['axis-1']
             z = df[df['class'] == name]['axis-2']
 
             mask[i, y, x, z] = 1
+            mask[-1] -= mask[i]
 
         return mask
 
@@ -102,13 +104,12 @@ class DatasetNetwork(DataSet):
     def __getitem__(self, index):
         stack_fname = self.stack_list[index]
         mask_fname = self.mask_list[index]
+
         stack = np.load(f'{self.folder}/{stack_fname}')
         mask  = np.load(f'{self.folder}/{mask_fname}')
-
         stack = np.expand_dims(stack, axis=0)
         stack = self.normalize(stack)
         stack, mask = self.to_tensor([stack, mask])
-        # stack = torch.unsqueeze(stack, dim=0)
         return stack, mask
 
 if __name__ == '__main__':

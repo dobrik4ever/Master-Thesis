@@ -16,8 +16,8 @@ class ModelFeeder:
         OUT = [np.zeros_like(MAP) for c in range(self.number_of_classes)]
 
         I,J,K = self.chunkizer.indices
-        pbar = tqdm.tqdm(total=I*J*K)
-        pbar.set_description('Feeding network with chunks')
+        # pbar = tqdm.tqdm(total=I*J*K)
+        # pbar.set_description('Feeding network with chunks')
         for i in range(I):
             for j in range(J):
                 for k in range(K):
@@ -28,8 +28,8 @@ class ModelFeeder:
                     y = self.model.forward(x)
                     for c in range(self.number_of_classes):
                         OUT[c][i,j,k] = y.cpu().detach().numpy()[0, c]
-                    pbar.update(1)
-        pbar.close()
+                    # pbar.update(1)
+        # pbar.close()
         stacks = []
         for c in range(self.number_of_classes):
             stacks.append(self.chunkizer.assemble(OUT[c]))

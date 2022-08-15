@@ -19,14 +19,16 @@ class BaseModel(pl.LightningModule):
         x, y = train_batch
         y_pred = self.forward(x)    
         loss = self.loss(y_pred, y)
-        self.log('train_loss', loss)
+        if loss != None:
+            self.log('train_loss', loss)
         return loss
 
     def validation_step(self, val_batch, batch_idx):
         x, y = val_batch
         y_pred = self.forward(x)    
         loss = self.loss(y_pred, y)
-        self.log('valid_loss', loss)
+        if loss != None:
+            self.log('valid_loss', loss)
         return loss
 
     def plot_output_mask(self, data_loader):

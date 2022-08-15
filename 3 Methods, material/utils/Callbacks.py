@@ -27,7 +27,7 @@ class SavingOutputCallback(pl.Callback):
 
     def on_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         epoch = trainer.current_epoch
-        if epoch % self.save_every == 0:
+        if epoch % self.save_every == 0 and epoch != 0:
 
             stack = np.load(f'{self.stack_folder}/stack_{self.stack_id}.npy')
             stack = self.normalize_array(stack)

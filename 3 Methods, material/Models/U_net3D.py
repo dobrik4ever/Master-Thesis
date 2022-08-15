@@ -52,7 +52,7 @@ class Decoder(torch.nn.Module):
 
 class U_net3D(BaseModel):
 
-    def __init__(self, img_size, learning_rate=0.01, number_of_classes=2):
+    def __init__(self, img_size, learning_rate=0.01, number_of_classes=3):
         super().__init__(img_size, learning_rate)
         self.hparams.number_of_classes = number_of_classes
         self.hparams.img_size = img_size
@@ -64,7 +64,7 @@ class U_net3D(BaseModel):
         self.dec_2 = Decoder(18,  9, 3)
         self.dec_1 = Decoder(9, number_of_classes, 3)
 
-        self.output_function = nn.Sigmoid()
+        self.output_function = nn.Softmax(dim=1)
         self.save_hyperparameters()
         self.example_input_array = torch.unsqueeze(torch.rand(img_size), dim=0)
 
@@ -72,14 +72,40 @@ class U_net3D(BaseModel):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
 
+    def compute_class_weights(self, x):
+        weights = []
+        all_ones = torch.sum(x == 1)
+        for c in range(self.hparams.number_of_classes):
+            ones_a = all_ones / torch.sum(x[:,c]==1) 
+            if ones_a == torch.inf: ones_a = 1
+            weights.append(ones_a)
+        return torch.tensor(weights).float().cuda()
+
     def loss(self, output, target):
         # target = target[0]
-        loss_1 = torch.mean(torch.square(output[target == 0] - target[target == 0]))
-        if torch.sum(target == 1) == 0:
-            loss_2 = 0
-        else:
-            loss_2 = torch.mean(torch.square(output[target == 1] - target[target == 1]))
-        loss = loss_1 + loss_2
+        # loss_1 = torch.mean(torch.square(output[target == 0] - target[target == 0]))
+        # if torch.sum(target == 1) == 0:
+        #     loss_2 = 0
+        # else:
+        #     loss_2 = torch.mean(torch.square(output[target == 1] - target[target == 1]))
+        # loss = loss_1 + loss_2
+        # entries = target == 1
+        # if torch.sum(entries) == 0:
+            # loss = None
+        # else:
+            # loss = - torch.log(output[entries]).mean() # Softmax loss
+        # zeros = torch.sum(target == 0)
+        # ones = torch.sum(target == 1)
+    
+        o = output#[target==1]
+        t = target#[target==1]
+        if torch.sum(t == 1) == 0:
+            loss = None
+            return loss
+
+        weights = self.compute_class_weights(t)
+        loss = torch.nn.CrossEntropyLoss(weight=weights)(o,t)
+        # loss_noweights = torch.nn.CrossEntropyLoss()(o,t)
         return loss 
 
     def forward(self, x):

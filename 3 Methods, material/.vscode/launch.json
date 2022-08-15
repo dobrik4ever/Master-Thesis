@@ -1,6 +1,14 @@
 {
     "configurations": [
         {
+            "name": "Train",
+            "type": "python",
+            "request": "launch",
+            "program": "train.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "Dynamic Python: File",
             "type": "python",
             "request": "launch",
