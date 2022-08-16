@@ -27,8 +27,7 @@ class BaseModel(pl.LightningModule):
         x, y = val_batch
         y_pred = self.forward(x)    
         loss = self.loss(y_pred, y)
-        if loss != None:
-            self.log('valid_loss', loss)
+        self.log('valid_loss', loss)
         return loss
 
     def plot_output_mask(self, data_loader):
