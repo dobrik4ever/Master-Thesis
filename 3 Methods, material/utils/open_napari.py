@@ -22,9 +22,13 @@ if __name__ == '__main__':
             'color':None
         }
     }
+    stack = np.load('data/raw/stack_0.npy')
+    print(stack.shape)
+    stack = np.transpose(stack, [2,0,1])
+
     viewer = napari.Viewer()
     viewer.add_image(
-        np.load('data/raw/stack_0.npy'),
+       stack,
         name = 'stack',
         colormap='gray',
         rendering='average',
@@ -33,8 +37,11 @@ if __name__ == '__main__':
     fname_template = 'data/output/U_net_2_epoch_{epoch}-class_{Class}.npy'
     for channel_idx in classes:
         if classes[channel_idx]['name'] != 'Background':
+            stack = np.load(fname_template.format(epoch=max_epoch, Class=channel_idx))
+            print(stack.shape)
+            stack = np.transpose(stack, [2,0,1])
             viewer.add_image(
-                np.load(fname_template.format(epoch=max_epoch, Class=channel_idx)),
+                stack,
                 name = classes[channel_idx]['name'],
                 colormap=classes[channel_idx]['color'],
                 rendering='iso',
