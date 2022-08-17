@@ -7,6 +7,8 @@ train_folder = 'data/train'
 batch_size = 5
 learning_rate = 1e-4
 
+pl.utilities.seed.seed_everything(0)
+
 dataset = DatasetNetwork(train_folder)
 class_weights = calculate_class_weights(train_folder)
 
@@ -30,6 +32,7 @@ model.hparams.batch_size = batch_size
 trainer = pl.Trainer(
     gpus=-1,
     # overfit_batches=1,
+    max_epochs=150,
     fast_dev_run = False,
     # accumulate_grad_batches=5,
     # resume_from_checkpoint='lightning_logs/version_31/checkpoints/epoch=592-step=2372.ckpt',

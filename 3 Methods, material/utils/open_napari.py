@@ -29,8 +29,8 @@ if __name__ == '__main__':
         colormap='gray',
         rendering='average',
         blending='additive')
-
-    fname_template = 'data\output\ModelOutput_epoch_{epoch}-class_{Class}.npy'
+    # epoch = 198
+    fname_template = 'data/output/U_net_2_epoch_{epoch}-class_{Class}.npy'
     for channel_idx in classes:
         if classes[channel_idx]['name'] != 'Background':
             viewer.add_image(

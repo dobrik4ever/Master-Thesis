@@ -30,38 +30,8 @@ class BaseModel(pl.LightningModule):
         self.log('valid_loss', loss)
         return loss
 
-    def plot_output_mask(self, data_loader):
-        x, y = next(iter(data_loader))
-        out = self.forward(x).detach().numpy()[0,0]
-        x = x[0,0].detach().numpy()
-
-        fig = plt.figure(figsize=(10,10))
-        plt.imshow(x, cmap='gray')
-        plt.imshow(out, alpha=0.5, extent=(0, x.shape[0], x.shape[1], 0))
-
-    def plot_activations(self, x):
-        activation_number = x.shape[1]
-        fig, ax = plt.subplots(1,activation_number, figsize=(5*activation_number,5))
-        if activation_number != 1:
-            for ia in range(activation_number):
-                k = x[0,ia].cpu().detach().numpy()
-                ax[ia].imshow(k)
-                ax[ia].axis('off')
-        else:
-            k = x[0,0].cpu().detach().numpy()
-            ax.imshow(k)
-            ax.axis('off')
-
-        plt.show()
-
     def save_model(self, path):
         torch.save(self.state_dict(), path)
 
     def load_model(self, path):
         self.load_state_dict(torch.load(path))
-
-    def test_forward(self):
-        h, w = self.img_size
-        tensor = torch.rand([1, 1, h, w])
-        output = self.forward(tensor)
-        print('Output shape:', output.shape)

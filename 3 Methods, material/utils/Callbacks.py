@@ -12,7 +12,7 @@ class SavingOutputCallback(pl.Callback):
     save_every = 10
     def __init__(self) -> None:
         super().__init__()
-        self._empty_output_folder()
+        # self._empty_output_folder()
 
     def _empty_output_folder(self):
         for file in os.listdir(self.output_folder):
@@ -33,6 +33,6 @@ class SavingOutputCallback(pl.Callback):
             stack = self.normalize_array(stack)
             feeder = ModelFeeder(pl_module, chunk_size=chunk_size)
             feeder.feed(stack)
-            feeder.save(f'data/output/ModelOutput_epoch_{epoch}')
+            feeder.save(f'data/output/{pl_module.__class__.__name__}_epoch_{epoch}')
 
 

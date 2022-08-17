@@ -2,6 +2,7 @@
 *data/
 *lightning_logs/
 *trigonometric_dump.npy
+MBT_NET_*/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
