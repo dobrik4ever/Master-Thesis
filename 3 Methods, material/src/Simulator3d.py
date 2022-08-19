@@ -24,6 +24,18 @@ class Simulator3D:
                         sigma,
                         noise_signal_level,
                         noise_background_level):
+        """Simulator of 3d cytoplasm FAD fluorescence
+
+        Args:
+            canvas_shape (tuple:int): tuple, contains 3 entries, of stack size Y, X, Z
+            list_of_cell_types (list:Cell3D): list contains Cell3D instances, will populate 
+            canvas with selected cells in random manner
+            cell_number (int): number of cells to be simulated. Will stop populate canvas if
+            cell_pos_tries_number is exceeded during population.
+            sigma (float): parameter for gaussian smoothing
+            noise_signal_level (float): noise of photodetector
+            noise_background_level (float): acquisition noise
+        """
 
         self.canvas_shape = canvas_shape
         self.list_of_cells_types = list_of_cell_types
@@ -97,17 +109,23 @@ class Simulator3D:
                 output_mask[class_index][y, x, z] = 1
         self.output_mask = output_mask
 
+    def to_uint8(self, arr):
+        arr /= arr.max()
+        arr *= 255
+        return arr.astype(np.uint8)
+
     def save(self, path, name, tif=False):
         fname = f'{path}/{name}.npy'
         if not self.output_mask: self.get_point_mask()
         if os.path.exists(fname): os.remove(fname)
-        np.save(fname, self.image)
+        image = self.to_uint8(self.image)
+        np.save(fname, image)
 
         if tif:
             from skimage import io
             fname = f'{path}/{name}.tif'
             if os.path.exists(fname): os.remove(fname)
-            io.imsave(f'{path}/{name}.tif', self.image)
+            io.imsave(f'{path}/{name}.tif', image)
 
         if not self.df_points: self.get_points_csv()
         self.df_points.to_csv(f'{path}/{name}.csv')
@@ -119,7 +137,7 @@ class Simulator3D:
     @normalize
     def apply_noise(self):
         self.image += np.random.random(self.canvas_shape)*self.noise_background_level
-        self.image *= (np.random.random(self.canvas_shape)+self.noise_signal_level)
+        # self.image *= (np.random.random(self.canvas_shape)+self.noise_signal_level)
 
     @normalize
     def populate(self):
@@ -181,8 +199,8 @@ class Simulator3D_with_crypts(Simulator3D):
     def run(self):
         self.populate_crypts()
         self.populate()
-        self.apply_filter()
-        self.apply_noise()       
+        # self.apply_filter()
+        # self.apply_noise()       
         return self.image
 
     def populate_crypts(self):
@@ -215,7 +233,7 @@ class Simulator3D_with_crypts(Simulator3D):
 
                 if terminate == self.cell_pos_tries_number:
                     print('WARNING!: Could not position crypt, try to decrease crypt size or increase simulation size')
-                    print(f'Total cell number is: {i}')
+                    print(f'Total crypt number is: {i}')
                     break
                     # raise RuntimeError('Could not position cell, try to decrease cell size or increase simulation size')
             if terminate == self.cell_pos_tries_number:
