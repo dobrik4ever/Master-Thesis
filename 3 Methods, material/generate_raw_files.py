@@ -12,13 +12,13 @@ c1 = CellTypes.Macrophage(dx, dy, dz)
 c2 = CellTypes.T_Cell(dx, dy, dz)
 
 cell_types = [c1, c2]
-N = 1 # Number of files to be created
-for i in range(0, N):
+N = 20 # Number of files to be created
+for i in range(1, N):
     print(f'Files {i} / {N} are done')
     sim = Simulator3D_with_crypts(
         canvas_shape=stack_size,
         list_of_cell_types=cell_types,
-        cell_number=500,
+        cell_number=700,
         sigma = 1.5,
         noise_signal_level = 0.5,
         noise_background_level = 0.1, dx=dx, dy=dy, dz=dz)

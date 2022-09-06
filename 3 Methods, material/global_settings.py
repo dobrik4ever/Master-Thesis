@@ -4,10 +4,18 @@
 import numpy as np
 
 # Parameters
+correspondances_table = { # correspondance of channel index to class
+    'Macrophage': 0,
+    'T_Cell'    : 1,
+    'Background': 2
+}
+use_chunks = False
 stack_size = [500, 500, 100]
 chunk_size = [100, 100, 100]
 dx = dy = 0.5
 dz = 0.5
+
+if not use_chunks: chunk_size = stack_size
 
 # Sanity check
 def sanity_check():

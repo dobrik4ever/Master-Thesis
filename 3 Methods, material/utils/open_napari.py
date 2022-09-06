@@ -34,7 +34,7 @@ if __name__ == '__main__':
         rendering='average',
         blending='additive')
     # epoch = 198
-    fname_template = 'data/output/U_net_2_epoch_{epoch}-class_{Class}.npy'
+    fname_template = 'data/output/U_net3D_epoch_{epoch}-class_{Class}.npy'
     for channel_idx in classes:
         if classes[channel_idx]['name'] != 'Background':
             stack = np.load(fname_template.format(epoch=max_epoch, Class=channel_idx))

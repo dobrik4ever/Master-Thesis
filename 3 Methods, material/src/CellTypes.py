@@ -24,7 +24,7 @@ class Macrophage(Cell3D):
     gamma_cytoplasm         = 0.5
     circ_cytoplasm          = 1.5
     gamma_cytoplasm_texture = 0.1
-    lowest_intensity        = 0.05
+    lowest_intensity        = 0.01
 
     def __init__(self, dx, dy, dz):
         self.dx = dx
@@ -40,7 +40,7 @@ class T_Cell(Cell3D):
     gamma_cytoplasm         = 1.5
     circ_cytoplasm          = 2.0
     gamma_cytoplasm_texture = .1
-    lowest_intensity        = 0.05
+    lowest_intensity        = 0.01
 
     def __init__(self, dx, dy, dz):
         self.dx = dx

@@ -25,9 +25,9 @@ class Encoder(torch.nn.Module):
 
     def forward(self, x):
         x = self.BN(x)
-        y = self.conv_1(x); 
-        y = self.conv_2(y); 
-        y = self.pool(y);
+        y = self.conv_1(x)
+        y = self.conv_2(y)
+        y = self.pool(y)
         return y
 
 class Decoder(torch.nn.Module):
@@ -50,8 +50,8 @@ class Decoder(torch.nn.Module):
     def forward(self, x):
         y = nn.functional.interpolate(x, scale_factor=MPS, mode='trilinear')
         y = self.BN(y)
-        y = self.upconv_1(y);   
-        y = self.upconv_2(y);   
+        y = self.upconv_1(y)  
+        y = self.upconv_2(y)  
         return y
 
 class U_net3D(BaseModel):
@@ -61,8 +61,9 @@ class U_net3D(BaseModel):
         self.hparams.number_of_classes = number_of_classes
         self.hparams.batch_size = batch_size
         self.hparams.img_size = img_size
-        self.hparams.class_weights = class_weights
-        self.class_weights = torch.tensor(class_weights).float().cuda()
+        if class_weights: 
+            self.hparams.class_weights = class_weights
+            self.class_weights = torch.tensor(class_weights, device=self.device).float()
         self.save_hyperparameters()
         self.example_input_array = torch.unsqueeze(torch.rand(img_size), dim=0)
         self.setup_architecture()
@@ -71,11 +72,9 @@ class U_net3D(BaseModel):
         self.enc_1 = Encoder(1,   9, 3)
         self.enc_2 = Encoder(9,  18, 3) 
         self.enc_3 = Encoder(18, 36, 3)
-        self.enc_4 = Encoder(36, 72, 3)
-        self.enc_5 = Encoder(72, 144, 3)
+        # self.enc_4 = Encoder(36, 72, 3)
 
-        self.dec_5 = Decoder(144, 72, 3)
-        self.dec_4 = Decoder(72, 36, 3)
+        # self.dec_4 = Decoder(72, 36, 3)
         self.dec_3 = Decoder(36, 18, 3)
         self.dec_2 = Decoder(18,  9, 3)
         self.dec_1 = Decoder(9, self.hparams.number_of_classes, 3)
@@ -95,9 +94,7 @@ class U_net3D(BaseModel):
         ey1 = self.enc_1(x)
         ey2 = self.enc_2(ey1)
         ey3 = self.enc_3(ey2)
-        # ey4 = self.enc_4(ey3)
  
-        # dy4 = self.dec_4(ey4)
         dy3 = self.dec_3(ey3)
         dy2 = self.dec_2(dy3 + ey2)
         dy1 = self.dec_1(dy2 + ey1)
