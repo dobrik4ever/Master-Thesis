@@ -19,7 +19,6 @@ class BaseModel(pl.LightningModule):
     def forward_from_file(self, path):
         self.eval()
         x = np.load(path).astype(float)
-        x -= x.min()
         x /= x.max()
         x = np.expand_dims(x, axis=0)
         x = np.expand_dims(x, axis=0)

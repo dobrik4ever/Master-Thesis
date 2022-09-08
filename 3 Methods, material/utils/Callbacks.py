@@ -1,38 +1,28 @@
-import torch
 import pytorch_lightning as pl
 import numpy as np
-from utils import ModelFeeder
 import os
-from global_settings import chunk_size, stack_size
+from global_settings import correspondances_table
+
 
 class SavingOutputCallback(pl.Callback):
-    stack_folder = 'data/raw'
+    stack_folder = 'data/test'
     output_folder = 'data/output'
-    stack_id = 0
-    save_every = 10
+    stack_id = 1
+    save_every = 1
+    classes = [name for name in correspondances_table if name != 'Background']
+
     def __init__(self) -> None:
         super().__init__()
-        # self._empty_output_folder()
+        self._empty_output_folder()
 
     def _empty_output_folder(self):
         for file in os.listdir(self.output_folder):
             os.remove(f'{self.output_folder}/{file}')
 
-    def normalize_array(self, arr):
-        arr = arr.astype(float)
-        # arr = np.expand_dims(arr, axis=0)
-        if arr.max() != 0:
-            arr /= arr.max()
-        return arr
-
     def on_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         epoch = trainer.current_epoch
         if epoch % self.save_every == 0 and epoch != 0:
-
-            stack = np.load(f'{self.stack_folder}/stack_{self.stack_id}.npy')
-            stack = self.normalize_array(stack)
-            feeder = ModelFeeder(pl_module, chunk_size=chunk_size)
-            feeder.feed(stack)
-            feeder.save(f'data/output/{pl_module.__class__.__name__}_epoch_{epoch}')
+            y_pred = pl_module.forward_from_file(f'{self.stack_folder}/stack_{self.stack_id}.npy')
+            np.save(f'{self.output_folder}/{pl_module.__class__.__name__}_epoch_{epoch}.npy', y_pred)
 
 

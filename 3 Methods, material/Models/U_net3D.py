@@ -63,7 +63,7 @@ class U_net3D(BaseModel):
         self.hparams.img_size = img_size
         if class_weights: 
             self.hparams.class_weights = class_weights
-            self.class_weights = torch.tensor(class_weights, device=self.device).float()
+            self.class_weights = torch.tensor(class_weights).float().cuda()
         self.save_hyperparameters()
         self.example_input_array = torch.unsqueeze(torch.rand(img_size), dim=0)
         self.setup_architecture()
