@@ -1,22 +1,23 @@
-"""This script is used to run model and count cells.
-Optionally it can evaluate performance, given ground truth
-    """
+"""This script is used to run model and count cells"""
 from Models import U_net3D
 from global_settings import stack_size, correspondances_table, probability_threshold
 from utils import CellCounter, Evaluator
 import pandas as pd
+import os
 import numpy as np
 import napari
 
-path_to_model = 'lightning_logs/version_0/checkpoints/epoch=99-step=1500.ckpt'
+path_to_model = 'MBT-net_1.0.ckpt'
 path_to_stack = 'data/raw/stack_1.npy'
 path_to_output_folder = 'results'
 show_napari = True
-evaluate_performance = True
-path_to_actual_cell_locations = 'data/raw/stack_1.csv'
 
-colors = ['red', 'green', 'blue']
+colors = ['green', 'red', 'blue']
 
+for file in [path_to_model, path_to_stack, path_to_output_folder]:
+    if not os.path.exists(file):
+        raise OSError('File or folder is not found: "'+file+'"')
+        
 if __name__ == '__main__':
 
     # Initialization of the model and computation of output
@@ -24,23 +25,11 @@ if __name__ == '__main__':
     model = U_net3D(stack_size).load_from_checkpoint(path_to_model).cuda()
     output = model.forward_from_file(path_to_stack)
 
-    # Counting of cells
-    print('Counting cells...')
     CC = CellCounter(output, correspondances_table, probability_threshold)
     results = CC.find_cells()
     results.to_csv(f'{path_to_output_folder}/cells.csv')
     print('Predicted cells:')
     print(results['class'].value_counts())
-
-    if evaluate_performance:
-        # Evaluation of performance
-        print('Evaluating performance...')
-        results_GT = pd.read_csv(path_to_actual_cell_locations, index_col=0)
-        QC = Evaluator(results_GT, results)
-        print('Real quantity:')
-        print(results_GT['class'].value_counts())
-        print('Misclassification %:', end=' ')
-        print(QC.compute_misclassified_percent())
 
     if show_napari:
         # Visualization
@@ -56,4 +45,4 @@ if __name__ == '__main__':
             viewer.add_points(df, size=2, opacity=0.5, edge_color=colors[i], name=cell_class)
         viewer.show()
         napari.run()
-
+    

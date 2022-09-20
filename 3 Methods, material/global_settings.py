@@ -9,7 +9,7 @@ correspondances_table = { # correspondance of channel index to class. Must be in
     'T_Cell'    : 1,
     'Background': 2 # there always must be a background channel (last)
 }
-probability_threshold = 0.99
+probability_threshold = 0.999
 use_chunks = False
 stack_size = [500, 500, 100]
 chunk_size = [100, 100, 100]

@@ -7,7 +7,7 @@ c2 = CellTypes.T_Cell(dx, dy, dz)
 cell_types = [c1, c2]
 # output_folder = 'data/raw'
 output_folder = 'data/test'
-N = 5 # Number of files to be created
+N = 10 # Number of files to be created
 
 # Check if folder exists, if not, creates it
 if not os.path.exists('data'):
@@ -17,7 +17,7 @@ if not os.path.exists('data'):
     os.mkdir('data/test')
     os.mkdir('data/output')
 
-for i in range(1, N):
+for i in range(0, N):
     print(f'Files {i} / {N} are done')
     sim = Simulator3D_with_crypts(
         canvas_shape=stack_size,
