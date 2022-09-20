@@ -3,6 +3,7 @@ import torch
 import pandas as pd
 import numpy as np
 import os
+from global_settings import correspondances_table
 
 class DataSet(Dataset):
 
@@ -30,7 +31,7 @@ class DataSet(Dataset):
 
     def generate_mask(self, index, shape):
         df = pd.read_csv(f'{self.folder}/stack_{index}.csv')
-        self.classes = df['class'].unique()
+        self.classes = [name for name in correspondances_table if 'Background' not in name]
         N_classes = len(self.classes)
         mask = np.zeros([N_classes+1, *shape])
 

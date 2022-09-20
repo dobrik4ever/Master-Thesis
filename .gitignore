@@ -1,6 +1,6 @@
 # My files
 *data/
-*lightning_logs/
+# *lightning_logs/
 *trigonometric_dump.npy
 MBT_NET_*/
 

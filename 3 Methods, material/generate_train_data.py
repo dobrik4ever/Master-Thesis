@@ -8,8 +8,8 @@ from global_settings import stack_size, chunk_size
 raw_folder   = 'data/raw'
 train_folder = 'data/train'
 
-
 dataset = DataSet(raw_folder)
+print(dataset)
 chunkizer = Chunkizer(
     input_shape=stack_size,
     chunk_shape=chunk_size

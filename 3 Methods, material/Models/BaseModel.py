@@ -1,5 +1,6 @@
 from turtle import forward
 import torch
+import numpy as np
 import pytorch_lightning as pl
 import matplotlib.pyplot as plt
 import abc
@@ -14,6 +15,16 @@ class BaseModel(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
+
+    def forward_from_file(self, path):
+        self.eval()
+        x = np.load(path).astype(float)
+        x /= x.max()
+        x = np.expand_dims(x, axis=0)
+        x = np.expand_dims(x, axis=0)
+        x = torch.tensor(x, device=self.device).float()
+        x = self.forward(x).cpu().detach().numpy()[0]
+        return x
 
     def training_step(self, train_batch, batch_idx):
         x, y = train_batch

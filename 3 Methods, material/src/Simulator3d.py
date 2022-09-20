@@ -199,8 +199,8 @@ class Simulator3D_with_crypts(Simulator3D):
     def run(self):
         self.populate_crypts()
         self.populate()
-        # self.apply_filter()
-        # self.apply_noise()       
+        self.apply_filter()
+        self.apply_noise()       
         return self.image
 
     def populate_crypts(self):
